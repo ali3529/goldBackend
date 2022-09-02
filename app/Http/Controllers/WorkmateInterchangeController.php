@@ -7,6 +7,7 @@ use App\Models\sale;
 use App\Models\WorkmatePayment;
 use App\Models\totalReceived;
 use App\Models\Workmate;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,9 +17,10 @@ class WorkmateInterchangeController extends Controller
     {
         $data = request();
         $req = json_decode($data['form_data'], true);
-
+        $workmate = Workmate::where('id', $req['workmate_id'])->first();
         $images = $this->saveImages();
         $req['document_pic'] = json_encode($images);
+
 
         $validator = $this->validatenewPurche($req);
         if ($validator->fails()) {
@@ -26,47 +28,41 @@ class WorkmateInterchangeController extends Controller
                 'errors' => $validator->errors()->all()], 200);
         }
 
-        purchase::create($req);
+
         //save purches remainder in workmate
-        $work = Workmate::where('id', $req['workmate_id'])->first();
-        if ($req['p_method'] == "G") {
-            $purches = $work->workmate_purchases;
-            $sales = $work->workmate_sales;
-            $purches += $req['amountG'];
-            //save intergange G
-            if ($sales != 0) {
-                $remainde = $purches - $sales;
-                if ($purches < $sales) {
-                    $work->update(array('workmate_sales' => abs($remainde)));
-                } else {
 
-                    $work->update(array('workmate_purchases' => $remainde));
-                    $work->update(array('workmate_sales' => 0));
-                }
 
+        if ($workmate->workmate_receive_g != 0) {
+            $bigger = $req['amountG'] >= $workmate->workmate_receive_g;
+            $reminder = $req['amountG'] > $workmate->workmate_receive_g ? $req['amountG'] - $workmate->workmate_receive_g : $workmate->workmate_receive_g - $req['amountG'];
+
+            if ($bigger) {
+                $workmate->workmate_payment_g += $reminder;
+                $workmate->workmate_receive_g = 0;
             } else {
-                $work->update(array('workmate_purchases' => $purches));
+                $workmate->workmate_receive_g = $reminder;
             }
         } else {
-            $purches = $work->workmate_purchases_t;
-            $sales = $work->workmate_sales_t;
-            $purches += $req['amountT'];
-            //save intergange T
-            if ($sales != 0) {
-                $remainde = $purches - $sales;
-                if ($purches < $sales) {
-                    $work->update(array('workmate_sales_t' => abs($remainde)));
-                } else {
-
-                    $work->update(array('workmate_purchases_t' => $remainde));
-                    $work->update(array('workmate_sales_t' => 0));
-                }
-
-            } else {
-                $work->update(array('workmate_purchases_t' => $purches));
-            }
+            $workmate->workmate_payment_g += $req['amountG'];
         }
 
+        //T
+        if ($workmate->workmate_payment_t != 0) {
+            $bigger = $req['amountT'] >= $workmate->workmate_payment_t;
+
+            $reminder = $req['amountT'] > $workmate->workmate_payment_t ? $req['amountT'] - $workmate->workmate_payment_t : $workmate->workmate_payment_t - $req['amountT'];
+//                return ['remainder'=>$reminder,'bigger'=>$bigger];
+            if ($bigger) {
+                $workmate->workmate_receive_t += $reminder;
+                $workmate->workmate_payment_t = 0;
+            } else {
+                $workmate->workmate_payment_t = $reminder;
+            }
+        } else {
+            $workmate->workmate_receive_t += $req['amountT'];
+        }
+        purchase::create($req);
+        $workmate->update();
 
         return response()->json([
             'status' => '1',
@@ -78,7 +74,7 @@ class WorkmateInterchangeController extends Controller
     {
         $data = request();
         $req = json_decode($data['form_data'], true);
-
+        $workmate = Workmate::where('id', $req['workmate_id'])->first();
         $images = $this->saveImages();
         $req['document_pic'] = json_encode($images);
         $validator = $this->validatenewPurche($req);
@@ -86,47 +82,45 @@ class WorkmateInterchangeController extends Controller
             return response()->json(['status' => '0',
                 'errors' => $validator->errors()->all()], 200);
         }
-        sale::create($req);
+
         //save sales remainder in workmate
-        $work = Workmate::where('id', $req['workmate_id'])->first();
 
-        if ($req['p_method'] == "G") {
-            $sales = $work->workmate_sales;
-            $purches = $work->workmate_purchases;
-            $sales += $req['amountG'];
 
-            //save intergange G
-            if ($purches != 0) {
-                $remainde = $sales - $purches;
-                if ($sales < $purches) {
-                    $work->update(array('workmate_purchases' => abs($remainde)));
-                } else {
-                    $work->update(array('workmate_purchases' => 0));
-                    $work->update(array('workmate_sales' => $remainde));
-                }
+        //G
+        if ($workmate->workmate_payment_g != 0) {
+            $bigger = $req['amountG'] >= $workmate->workmate_payment_g;
 
+            $reminder = $req['amountG'] > $workmate->workmate_payment_g ? $req['amountG'] - $workmate->workmate_payment_g : $workmate->workmate_payment_g - $req['amountG'];
+
+            if ($bigger) {
+                $workmate->workmate_receive_g += $reminder;
+                $workmate->workmate_payment_g = 0;
             } else {
-                $work->update(array('workmate_sales' => $sales));
+                $workmate->workmate_payment_g = $reminder;
             }
         } else {
-            $sales = $work->workmate_sales_t;
-            $purches = $work->workmate_purchases_t;
-            $sales += $req['amountT'];
-
-            //save intergange T
-            if ($purches != 0) {
-                $remainde = $sales - $purches;
-                if ($sales < $purches) {
-                    $work->update(array('workmate_purchases_t' => abs($remainde)));
-                } else {
-                    $work->update(array('workmate_purchases_t' => 0));
-                    $work->update(array('workmate_sales_t' => $remainde));
-                }
-
-            } else {
-                $work->update(array('workmate_sales_t' => $sales));
-            }
+            $workmate->workmate_receive_g += $req['amountG'];
         }
+
+        //T
+
+        if ($workmate->workmate_receive_t != 0) {
+            $bigger = $req['amountT'] >= $workmate->workmate_receive_t;
+
+            $reminder = $req['amountT'] > $workmate->workmate_receive_t ? $req['amountT'] - $workmate->workmate_receive_t : $workmate->workmate_receive_t - $req['amountT'];
+//                return ['remainder'=>$reminder,'bigger'=>$bigger];
+            if ($bigger) {
+                $workmate->workmate_payment_t += $reminder;
+                $workmate->workmate_receive_t = 0;
+            } else {
+                $workmate->workmate_receive_t = $reminder;
+            }
+        } else {
+            $workmate->workmate_payment_t += $req['amountT'];
+        }
+
+        sale::create($req);
+        $workmate->update();
 
         return response()->json([
             'status' => '1'
@@ -137,49 +131,56 @@ class WorkmateInterchangeController extends Controller
     {
         $data = request();
         $req = json_decode($data['form_data'], true);
-
+        $workmate = Workmate::where('id', $req['workmate_id'])->first();
         $images = $this->saveImages();
         $req['document_pic'] = json_encode($images);
-        if ($data['payment_method'] == "G") {
+        if ($req['payment_method'] == "G") {
             $validator = $this->validatenewPurche($req);
             if ($validator->fails()) {
                 return response()->json(['status' => '0',
                     'errors' => $validator->errors()->all()], 200);
             }
-        }
-        WorkmatePayment::create($req);
-        //intergange
 
-        $work = Workmate::where('id', $req['workmate_id'])->first();
+            if ($workmate->workmate_receive_g != 0) {
+                $bigger = $req['wieght'] >= $workmate->workmate_receive_g;
 
-        if ($req['payment_method'] == "T") {
-            if ($work->workmate_purchases_t != 0) {
-                $payment_amount = $req['payment_amount'];
-                $purchases_t = $work->workmate_purchases_t;
-                $remainder = $purchases_t - $payment_amount;
-                $work->update(array('workmate_purchases_t' => abs($remainder)));
+                $reminder = $req['wieght'] > $workmate->workmate_receive_g ? $req['wieght'] - $workmate->workmate_receive_g : $workmate->workmate_receive_g - $req['wieght'];
+
+                if ($bigger) {
+                    $workmate->workmate_payment_g += $reminder;
+                    $workmate->workmate_receive_g = 0;
+                } else {
+                    $workmate->workmate_receive_g = $reminder;
+                }
             } else {
-                return response()->json([
-                    'status' => '2',
-                    'massage' => 'مقدار بدهی صفر میباشد'
-                ], 200);
+                $workmate->workmate_payment_g += $req['wieght'];
             }
 
         } else {
-            if ($work->workmate_purchases != 0) {
-                $wieght = $req['wieght'];
-                $purchases_g = $work->workmate_purchases;
-                $remainder = $purchases_g - $wieght;
-                $work->update(array('workmate_purchases' => abs($remainder)));
+            if ($workmate->workmate_receive_t != 0) {
+                $bigger = $req['payment_amount'] >= $workmate->workmate_receive_t;
+
+                $reminder = $req['payment_amount'] > $workmate->workmate_receive_t ? $req['payment_amount'] - $workmate->workmate_receive_t : $workmate->workmate_receive_t - $req['payment_amount'];
+//                return ['remainder'=>$reminder,'bigger'=>$bigger];
+                if ($bigger) {
+                    $workmate->workmate_payment_t += $reminder;
+                    $workmate->workmate_receive_t = 0;
+                } else {
+                    $workmate->workmate_receive_t = $reminder;
+                }
             } else {
-                return response()->json([
-                    'status' => '2',
-                    'massage' => 'مقدار بدهی صفر میباشد'
-                ], 200);
+                $workmate->workmate_payment_t += $req['payment_amount'];
             }
+
         }
+        WorkmatePayment::create($req);
+        $workmate->update();
+        //intergange
+
+
         return response()->json([
-            'status' => '1'
+            'status' => '1',
+            'massage' => 'پرداختی با موفقیت ثبت شد'
         ], 200);
     }
 
@@ -188,48 +189,55 @@ class WorkmateInterchangeController extends Controller
         $data = request();
         $req = json_decode($data['form_data'], true);
 
+        $workmate = Workmate::where('id', $req['workmate_id'])->first();
         $images = $this->saveImages();
         $req['document_pic'] = json_encode($images);
-        if ($data['payment_method'] == "G") {
+        if ($req['payment_method'] == "G") {
             $validator = $this->validatenewPurche($req);
             if ($validator->fails()) {
                 return response()->json(['status' => '0',
                     'errors' => $validator->errors()->all()], 200);
             }
-        }
-        totalReceived::create($req);
-        //intergange
 
-        $work = Workmate::where('id', $req['workmate_id'])->first();
+            if ($workmate->workmate_payment_g != 0) {
+                $bigger = $req['wieght'] >= $workmate->workmate_payment_g;
 
-        if ($req['payment_method'] == "T") {
-            if ($work->workmate_sales_t != 0) {
-                $payment_amount = $req['payment_amount'];
-                $sales_t = $work->workmate_sales_t;
-                $remainder = $sales_t - $payment_amount;
-                $work->update(array('workmate_sales_t' => abs($remainder)));
+                $reminder = $req['wieght'] > $workmate->workmate_payment_g ? $req['wieght'] - $workmate->workmate_payment_g : $workmate->workmate_payment_g - $req['wieght'];
+
+                if ($bigger) {
+                    $workmate->workmate_receive_g += $reminder;
+                    $workmate->workmate_payment_g = 0;
+                } else {
+                    $workmate->workmate_payment_g = $reminder;
+                }
             } else {
-                return response()->json([
-                    'status' => '2',
-                    'massage' => 'مقدار بدهی صفر میباشد'
-                ], 200);
+                $workmate->workmate_receive_g += $req['wieght'];
             }
+
 
         } else {
-            if ($work->workmate_sales != 0) {
-                $wieght = $req['wieght'];
-                $sales_g = $work->workmate_purchases;
-                $remainder = $sales_g - $wieght;
-                $work->update(array('workmate_sales' => abs($remainder)));
+            if ($workmate->workmate_payment_t != 0) {
+                $bigger = $req['payment_amount'] >= $workmate->workmate_payment_t;
+
+                $reminder = $req['payment_amount'] > $workmate->workmate_payment_t ? $req['payment_amount'] - $workmate->workmate_payment_t : $workmate->workmate_payment_t - $req['payment_amount'];
+//                return ['remainder'=>$reminder,'bigger'=>$bigger];
+                if ($bigger) {
+                    $workmate->workmate_receive_t += $reminder;
+                    $workmate->workmate_payment_t = 0;
+                } else {
+                    $workmate->workmate_payment_t = $reminder;
+                }
             } else {
-                return response()->json([
-                    'status' => '2',
-                    'massage' => 'مقدار بدهی صفر میباشد'
-                ], 200);
+                $workmate->workmate_receive_t += $req['payment_amount'];
             }
+
         }
+        totalReceived::create($req);
+        $workmate->update();
+
         return response()->json([
-            'status' => '1'
+            'status' => '1',
+            'massage' => 'دریافتی با موفقیت ثبت شد'
         ], 200);
     }
 
@@ -409,6 +417,30 @@ class WorkmateInterchangeController extends Controller
 //    }
     //
 
+    //old
+//    function getWorkmateInterchange()
+//    {
+//        $data = request()->all();
+//        $workmateId = $data['workmate_id'];
+//        $work = Workmate::where('id', $workmateId)->first();
+////        G
+//        $sales = $work->workmate_sales;
+//        $purchases = $work->workmate_purchases;
+////        T
+//        $salesT = $work->workmate_sales_t;
+//        $purchasesT = $work->workmate_purchases_t;
+//
+//
+//        return response()->json([
+//            'status' => '1',
+//            'sales' => $sales,
+//            'purchases' => $purchases,
+//            'sales_t' => $salesT,
+//            'purchases_t' => $purchasesT,
+//        ], 200);
+//
+//    }
+
     function getWorkmateInterchange()
     {
         $data = request()->all();
@@ -417,9 +449,13 @@ class WorkmateInterchangeController extends Controller
 //        G
         $sales = $work->workmate_sales;
         $purchases = $work->workmate_purchases;
+        $receive = $work->workmate_receive_g;
+        $payment = $work->workmate_payment_g;
 //        T
         $salesT = $work->workmate_sales_t;
         $purchasesT = $work->workmate_purchases_t;
+        $receiveT = $work->workmate_receive_t;
+        $paymentT = $work->workmate_payment_t;
 
 
         return response()->json([
@@ -428,7 +464,65 @@ class WorkmateInterchangeController extends Controller
             'purchases' => $purchases,
             'sales_t' => $salesT,
             'purchases_t' => $purchasesT,
+
+            '$receive' => $receive,
+            '$payment' => $payment,
+            '$receive_t' => $receiveT,
+            '$payment_t' => $paymentT,
+
+
         ], 200);
+
+    }
+
+    function getAllWorkmateInterchange(Request $request)
+    {
+        $data = request()->all();
+        $sale = sale::where('workmate_id', $request->workmate_id)->get();
+        $purchase = purchase::where('workmate_id', $request->workmate_id)->get();
+        $WorkmatePayment = WorkmatePayment::where('workmate_id', $request->workmate_id)->get();
+        $totalReceived = totalReceived::where('workmate_id', $request->workmate_id)->get();
+
+        $merge1 = $sale->concat($purchase);
+        $merge2 = $merge1->concat($WorkmatePayment);
+        $All_merged_data = $merge2->concat($totalReceived);
+
+        if ($data["from_date"] != '' && $data['to_date'] != '') {
+            $from = date($data['from_date']);
+            $to = date($data['to_date']);
+
+
+            return $All_merged_data->whereBetween('date_m', [$from, $to])->isEmpty() ? response()->json([
+                'status' => '0',
+                'message' => 'گزارش در این ناریخ ثبت نشده است'
+            ]) : response()->json([
+                'status' => '1',
+                'Workmate_interchange' => $All_merged_data->sortBy('date_m')->sortByDesc('Status')->whereBetween('date_m', [$from, $to])->values(),
+//                'Workmate_interchange' => $All_merged_data->sortBy('created_at')->sortByDesc('Status')->whereBetween('date_m', [$from, $to])->values(),
+
+            ]);
+
+        } else {
+
+            return [
+                'status' => '2',
+//                'Workmate_interchange' => $All_merged_data->sortBy('created_at')->sortByDesc('Status')->values(),
+                'Workmate_interchange' => $All_merged_data->sortBy('created_at')->sortByDesc('Status')->values(),
+
+            ];
+
+        }
+
+
+//        $sale = sale::where('workmate_id', $request->workmate_id)->orderBy('created_at', 'DESC')->whereBetween('date_m', [$from, $to])->get();
+
+//        $purchase = purchase::where('workmate_id', $request->workmate_id)->orderBy('created_at', 'DESC')->whereBetween('date_m', [$from, $to])->get();
+
+//        $WorkmatePayment = WorkmatePayment::where('workmate_id', $request->workmate_id)->orderBy('created_at', 'DESC')->whereBetween('date_m', [$from, $to])->get();
+
+//        $totalReceived = totalReceived::where('workmate_id', $request->workmate_id)->orderBy('created_at', 'DESC')->whereBetween('date_m', [$from, $to])->get();
+
+
 
     }
 }

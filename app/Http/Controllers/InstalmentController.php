@@ -123,8 +123,8 @@ class InstalmentController extends Controller
     private function validateCreateInstalment($request)
     {
         $validator = Validator::make($request, [
-            'recep_id' => ['required', 'string', 'max:255'],
-            'customer_id' => ['required', 'int', 'max:255'],
+            'recep_id' => ['required', 'string'],
+            'customer_id' => ['required', 'int'],
 //            'email' => ['required', 'string', 'email', 'max:255'],
             //'national_code' => ['required', 'max:10', Rule::unique('customers', 'national_code')]
         ]);
@@ -189,6 +189,133 @@ class InstalmentController extends Controller
         ];
     }
 
+//    function editInstelment()
+//    {
+//        $req = request();
+//        $data = json_decode($req['form_data'], true);
+//
+//        if ($this->checkPassword($data['password'])) {
+//            //images
+//            $images = $this->saveImages();
+//            if ($data['old_document_pic']!='empty')
+//            foreach ($data['old_document_pic'] as $img){
+//                $images[]=$img;
+//            }
+//
+//            $data['document_pic'] = json_encode($images);
+//
+//
+//            $instelment = Instalment::where('id', $data['instelment_id'])->first();
+//            $customer = Customer::where('id', $data['customer_id'])->first();
+//
+//
+//            //report
+//            $this->addReportInstelmentEdite("ویرایش قسط ", $customer->fullname, $customer->id, "6",
+//                $instelment->initial_payment, $data['initial_payment'], $instelment->day_rate,
+//                $data['day_rate'], $instelment->amount, $data['amount']);
+//
+////report
+//
+//
+//            if ($instelment->remainder == 0) {
+//                return [
+//                    "status" => '0',
+//                    "massage" => "امکان ویرایش قسط تسویه شده وجود ندارد"
+//                ];
+//            } else {
+//                $payments = "0";
+////        convert amount
+//                $amount = $instelment->paymentMethod == "G" ? $data['amount'] / $data['day_rate'] : $data['amount'];
+//                $amount_old = $instelment->paymentMethod == "G" ? $instelment->amount / $data['day_rate'] : $instelment->amount;
+//
+////        get payments
+//                $init = $instelment->paymentMethod == "G" ? $instelment->initial_payment / $data['day_rate']
+//                    : $instelment->initial_payment;
+//
+//
+//                if ($instelment->remainder != "0") {
+//                    $payments = $amount_old - $instelment->remainder;
+//                }
+//
+//
+////        set amount
+//                $instelment->amount = $data['amount'];
+//
+//                if ($amount < $payments) {
+//                    $creditor = $payments - $amount;
+//                    $instelment->remainder = 0;
+//
+//
+//                    if ($instelment->paymentMethod == "G") {
+//                        $customer->wallet_g += $creditor;
+//                    } else {
+//                        $customer->wallet_t += $creditor;
+//                    }
+//                    $customer->update();
+//                } else {
+//
+////        set new reminder
+//                    if ($instelment->remainder != "0") {
+////                    return $data['initial_payment']-$instelment->initial_payment;
+//
+//                        if ($data['initial_payment'] == $instelment->initial_payment) {
+//                            $instelment->remainder = strval($amount - $payments);
+//                        } else {
+//                            $init_convert = $instelment->paymentMethod == 'G' ?
+//                                $instelment->initial_payment / $instelment->day_rate : $instelment->initial_payment;
+//
+////                        return ['dd'=>($instelment->paymentMethod=='G'?$data['initial_payment']/$instelment->day_rate:$data['initial_payment']-$init_convert )> $instelment->remainder?true:false];
+////                        return $data['initial_payment']-$instelment->initial_payment ;
+//
+//
+//                            if (($instelment->paymentMethod == 'G' ? $data['initial_payment'] / $instelment->day_rate : $data['initial_payment'] - $init_convert) > $instelment->remainder) {
+//                            } else {
+//
+//                                $instelment->remainder = strval($amount - $payments);
+//                                $instelment->remainder = $instelment->remainder - ($instelment->paymentMethod == 'G' ?
+//                                        (($data['initial_payment'] - $instelment->initial_payment) / $instelment->day_rate) : ($data['initial_payment'] - $instelment->initial_payment));
+//                            }
+//
+//                        }
+//
+//                    } else {
+//                        $instelment->remainder = strval($amount - $init);
+//                    }
+//
+//
+////            return $payments;
+//                }
+//
+//
+////       updates
+//
+//                $instelment->recep_id = $data['recep_id'];
+//                $instelment->date = $data['date'];
+//                $instelment->max_date = $data['max_date'];
+//                $instelment->warranty = $data['warranty'];
+//                $instelment->monthly_profit = $data['monthly_profit'];
+//                $instelment->day_rate = $data['day_rate'];
+//
+//                $instelment->initial_payment_gram = $data['initial_payment_gram'];
+//                $instelment->initial_payment_t = $data['initial_payment_t'];
+//                $instelment->initial_payment = $data['initial_payment'];
+//                $instelment->document_pic = $data['document_pic'];
+//                $instelment->update();
+//
+//                return [
+//                    "status" => '1',
+//                    "massage" => "قسط جدید با موفقیت ویرایش شد"
+//                ];
+//            }
+//        } else {
+//            return [
+//                'status' => '2',
+//                'massage' => 'پسورد اشتباه است'
+//            ];
+//        }
+//
+//    }
+
     function editInstelment()
     {
         $req = request();
@@ -197,10 +324,10 @@ class InstalmentController extends Controller
         if ($this->checkPassword($data['password'])) {
             //images
             $images = $this->saveImages();
-            if ($data['old_document_pic']!='empty')
-            foreach ($data['old_document_pic'] as $img){
-                $images[]=$img;
-            }
+            if ($data['old_document_pic'] != 'empty')
+                foreach ($data['old_document_pic'] as $img) {
+                    $images[] = $img;
+                }
 
             $data['document_pic'] = json_encode($images);
 
@@ -217,104 +344,83 @@ class InstalmentController extends Controller
 //report
 
 
-            if ($instelment->remainder == 0) {
-                return [
-                    "status" => '0',
-                    "massage" => "امکان ویرایش قسط تسویه شده وجود ندارد"
-                ];
-            } else {
-                $payments = "0";
-//        convert amount
-                $amount = $instelment->paymentMethod == "G" ? $data['amount'] / $data['day_rate'] : $data['amount'];
-                $amount_old = $instelment->paymentMethod == "G" ? $instelment->amount / $data['day_rate'] : $instelment->amount;
-
-//        get payments
-                $init = $instelment->paymentMethod == "G" ? $instelment->initial_payment / $data['day_rate']
-                    : $instelment->initial_payment;
-
-
-                if ($instelment->remainder != "0") {
-                    $payments = $amount_old - $instelment->remainder;
-                }
-
-
-//        set amount
-                $instelment->amount = $data['amount'];
-
-                if ($amount < $payments) {
-                    $creditor = $payments - $amount;
-                    $instelment->remainder = 0;
-
-
-                    if ($instelment->paymentMethod == "G") {
-                        $customer->wallet_g += $creditor;
-                    } else {
-                        $customer->wallet_t += $creditor;
-                    }
-                    $customer->update();
-                } else {
-
-//        set new reminder
-                    if ($instelment->remainder != "0") {
-//                    return $data['initial_payment']-$instelment->initial_payment;
-
-                        if ($data['initial_payment'] == $instelment->initial_payment) {
-                            $instelment->remainder = strval($amount - $payments);
-                        } else {
-                            $init_convert = $instelment->paymentMethod == 'G' ?
-                                $instelment->initial_payment / $instelment->day_rate : $instelment->initial_payment;
-
-//                        return ['dd'=>($instelment->paymentMethod=='G'?$data['initial_payment']/$instelment->day_rate:$data['initial_payment']-$init_convert )> $instelment->remainder?true:false];
-//                        return $data['initial_payment']-$instelment->initial_payment ;
-
-
-                            if (($instelment->paymentMethod == 'G' ? $data['initial_payment'] / $instelment->day_rate : $data['initial_payment'] - $init_convert) > $instelment->remainder) {
-                            } else {
-
-                                $instelment->remainder = strval($amount - $payments);
-                                $instelment->remainder = $instelment->remainder - ($instelment->paymentMethod == 'G' ?
-                                        (($data['initial_payment'] - $instelment->initial_payment) / $instelment->day_rate) : ($data['initial_payment'] - $instelment->initial_payment));
-                            }
-
-                        }
-
-                    } else {
-                        $instelment->remainder = strval($amount - $init);
-                    }
-
-
-//            return $payments;
-                }
-
-
 //       updates
 
-                $instelment->recep_id = $data['recep_id'];
-                $instelment->date = $data['date'];
-                $instelment->max_date = $data['max_date'];
-                $instelment->warranty = $data['warranty'];
-                $instelment->monthly_profit = $data['monthly_profit'];
-                $instelment->day_rate = $data['day_rate'];
+            $instelment->recep_id = $data['recep_id'];
+            $instelment->date = $data['date'];
+            $instelment->max_date = $data['max_date'];
+            $instelment->warranty = $data['warranty'];
+            $instelment->monthly_profit = $data['monthly_profit'];
 
-                $instelment->initial_payment_gram = $data['initial_payment_gram'];
-                $instelment->initial_payment_t = $data['initial_payment_t'];
-                $instelment->initial_payment = $data['initial_payment'];
-                $instelment->document_pic = $data['document_pic'];
-                $instelment->update();
+            $instelment->document_pic = $data['document_pic'];
+            $instelment->update();
 
-                return [
-                    "status" => '1',
-                    "massage" => "قسط جدید با موفقیت ویرایش شد"
-                ];
-            }
+            return [
+                "status" => '1',
+                "massage" => "قسط جدید با موفقیت ویرایش شد"
+            ];
         } else {
             return [
                 'status' => '2',
                 'massage' => 'پسورد اشتباه است'
             ];
         }
-
     }
+
+//    function deleteInstalment()
+//    {
+//
+//
+//        $data = request()->all();
+//        if ($this->checkPassword($data['password'])) {
+//            $instelment = Instalment::where('id', $data['instelment_id'])->first();
+//            $customer = Customer::where('id', $instelment->customer_id)->first();
+//            if ($instelment->remainder == "0") {
+//                return response()->json([
+//                    "status" => '0',
+//                    'message' => "امکان حذف قسط تسویه شده وجود ندارد"]);
+//            }
+//            $amount = $instelment->paymentMethod == "G" ? $instelment->amount / $instelment->day_rate : $instelment->amount;
+//
+//            $pays = abs($amount - $instelment->remainder);
+////        $this->saveReport("حدف قسط ", $customer->fullname, $customer->id, "7");
+//
+//            $this->addReportInstelment("حدف قسط ", $customer->fullname, $customer->id, "7",
+//                $instelment->initial_payment, $instelment->day_rate, $instelment->amount);
+//
+//
+//            if ($data['in_wallet']) {
+//
+//
+//                if ($instelment->paymentMethod == "G") {
+//                    $customer->wallet_g += $pays;
+//
+//                } else {
+//                    $customer->wallet_t += $pays;
+//                }
+//                $customer->update();
+//                $instelment->delete();
+//                $this->saveReport("حدف قسط ", $customer->fullname, $customer->id, "7");
+//                return response()->json([
+//                    'status' => '1',
+//                    'message' => 'قسط با موفقیت حذف شد',
+//                    'in_wallet' => true
+//                ], 200);
+//            } else {
+//                $instelment->delete();
+//                return response()->json([
+//                    'status' => '1',
+//                    'message' => 'قسط با موفقیت حذف شد'
+//                ]);
+//            }
+//            return $data;
+//        } else {
+//            return [
+//                'status' => '2',
+//                'massage' => 'پسورد اشتباه است'
+//            ];
+//        }
+//    }
 
     function deleteInstalment()
     {
@@ -329,40 +435,18 @@ class InstalmentController extends Controller
                     "status" => '0',
                     'message' => "امکان حذف قسط تسویه شده وجود ندارد"]);
             }
-            $amount = $instelment->paymentMethod == "G" ? $instelment->amount / $instelment->day_rate : $instelment->amount;
 
-            $pays = abs($amount - $instelment->remainder);
 //        $this->saveReport("حدف قسط ", $customer->fullname, $customer->id, "7");
 
             $this->addReportInstelment("حدف قسط ", $customer->fullname, $customer->id, "7",
                 $instelment->initial_payment, $instelment->day_rate, $instelment->amount);
 
 
-            if ($data['in_wallet']) {
-
-
-                if ($instelment->paymentMethod == "G") {
-                    $customer->wallet_g += $pays;
-
-                } else {
-                    $customer->wallet_t += $pays;
-                }
-                $customer->update();
-                $instelment->delete();
-                $this->saveReport("حدف قسط ", $customer->fullname, $customer->id, "7");
-                return response()->json([
-                    'status' => '1',
-                    'message' => 'قسط با موفقیت حذف شد',
-                    'in_wallet' => true
-                ], 200);
-            } else {
-                $instelment->delete();
-                return response()->json([
-                    'status' => '1',
-                    'message' => 'قسط با موفقیت حذف شد'
-                ]);
-            }
-            return $data;
+            $instelment->delete();
+            return response()->json([
+                'status' => '1',
+                'message' => 'قسط با موفقیت حذف شد'
+            ]);
         } else {
             return [
                 'status' => '2',

@@ -80,6 +80,7 @@ Route::post('/get_workmate_purchase',[WorkmateInterchangeController::class,'getW
 Route::post('/get_workmate_sale',[WorkmateInterchangeController::class,'getWorkmateSale']);
 Route::post('/get_workmate_payment',[WorkmateInterchangeController::class,'getWorkmatePayment']);
 Route::post('/get_workmate_receive',[WorkmateInterchangeController::class,'getWorkmateReceive']);
+Route::post('/get_allWorkmate_interchange',[WorkmateInterchangeController::class,'getAllWorkmateInterchange']);
 
 Route::post('/get_workmate_interchange', [WorkmateInterchangeController::class, 'getWorkmateInterchange']);
 
